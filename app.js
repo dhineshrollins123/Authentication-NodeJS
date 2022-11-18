@@ -6,6 +6,8 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const encrypt = require('mongoose-encryption');
 const md5 = require('md5');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 mongoose.connect("mongodb://localhost:27017/UserDB");
 const app = express();
@@ -19,8 +21,6 @@ const userSchema = new mongoose.Schema({
 });
 // console.log(process.env.SECRET);
 // userSchema.plugin(encrypt,{secret: process.env.SECRET,encryptedFields:['password']});
-console.log("name 1 : "+md5("name"));
-console.log("name 2 : "+md5("nam"));
 const User = new mongoose.model("User", userSchema);
 
 app.listen(3000, () => {
@@ -40,18 +40,22 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-	const user = new User({
-		email: req.body.username,
-		password: md5(req.body.password)
+
+	bcrypt.hash(req.body.password,saltRounds,function(err,hash){
+		const user = new User({
+			email: req.body.username,
+			password: hash
+		});
+	
+		user.save(function (err) {
+			if (err) {
+				console.log(err);
+			} else {
+				res.render("secrets");
+			}
+		});
 	});
 
-	user.save(function (err) {
-		if (err) {
-			console.log(err);
-		} else {
-			res.render("secrets");
-		}
-	});
 });
 
 app.post("/login", function (req, res) {
@@ -60,12 +64,15 @@ app.post("/login", function (req, res) {
 			console.log(err);
 		} else {
 			if (result != null) {
-				if (result.password === md5(req.body.password)) {
-					console.log("Password Matched");
-                    res.render("secrets");
-				} else {
-					console.log("Password Not Matched");
-				}
+
+				bcrypt.compare(req.body.password,result.password,function(err,found){
+					if(found === true){
+						console.log("Password Matched");
+                        res.render("secrets");
+					}else {
+						console.log("Password Not Matched");
+					}
+				});
 			}else{
                 console.log("Entered EmailId is Not present !");
             }
