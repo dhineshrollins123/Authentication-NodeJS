@@ -15,6 +15,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 
+//first need to create session obj for our application then need to initialize passport & then created session obj can be used by passport package.
 app.use(session({
 	secret: "This is our secret.",
 	resave: false,
@@ -97,6 +98,10 @@ app.post("/login", function (req, res) {
 
 
 app.get("/logout",function(req,res){
-	req.logout();
+	req.logout(function(err){
+		if(err){
+			console.log(err);
+		}
+	});
 	res.redirect("/login");
 });
